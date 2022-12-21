@@ -30,6 +30,7 @@ void occupyPosition(int x, int y, char material);
 void unoccupyPosition(int x, int y);
 particle *spawnRectange(int xMouse, int yMouse, char material, particle *totalParticles);
 int renderPixel(particle *singleParticle);
+particle *particleSearch(int x, int y, particle *Particles);
 
 //Based on the particles material, it will be displayed with the appropriate color
 int renderPixel(particle *singleParticle){
@@ -90,9 +91,23 @@ void unoccupyPosition(int x, int y){
     return;
 }
 
+//Searches for a specific particle based on its coordinates
+particle *particleSearch(int x, int y, particle *Particles){
+    while(!(Particles->next_s == NULL)){
+        if(Particles->sand_D.x == x && Particles->sand_D.y == y){
+            return Particles;
+        }
+        
+        Particles = Particles->next_s;
+    }
+
+    printf("Error: Non-exisiting water detected");
+}
+
 //The physics engine
 void Gravity(particle *Particles){
     int numUpdated = 0;
+    particle *totalParticles = Particles;
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);   
     SDL_RenderClear(renderer);
     while(!(Particles->next_s == NULL)){
@@ -105,6 +120,21 @@ void Gravity(particle *Particles){
             Particles->sand_D.y++;
             occupyPosition(Particles->sand_D.x,Particles->sand_D.y, Particles->material);
             numUpdated++;
+
+        } else if(windowGrid[Particles->sand_D.x][Particles->sand_D.y + 1] == 'w' && Particles->material != 'w'){
+            
+            
+            particle *foundParticle = particleSearch(Particles->sand_D.x,Particles->sand_D.y + 1, totalParticles);
+            unoccupyPosition(foundParticle->sand_D.x,foundParticle->sand_D.y);
+            unoccupyPosition(Particles->sand_D.x,Particles->sand_D.y);
+            
+            foundParticle->sand_D.y = Particles->sand_D.y;
+            Particles->sand_D.y++;
+
+            occupyPosition(foundParticle->sand_D.x,foundParticle->sand_D.y,foundParticle->material);
+            occupyPosition(Particles->sand_D.x,Particles->sand_D.y,Particles->material);
+            
+            numUpdated += 2;
         } else if(Particles->sand_D.y < SCREEN_HEIGHT - 1 && Particles->sand_D.x > 0 &&  windowGrid[Particles->sand_D.x - 1][Particles->sand_D.y + 1] == ' '
             ){ //If falling down first fails proceeds to fall to the side [Only if the particle does not collide with the wall or another particle (left side priority)]
             //printf("Moved Left\n");
@@ -114,7 +144,7 @@ void Gravity(particle *Particles){
             Particles->sand_D.y++;
             occupyPosition(Particles->sand_D.x,Particles->sand_D.y,Particles->material);
             numUpdated++;
-        }else if(Particles->sand_D.y < SCREEN_HEIGHT - 1 && Particles->sand_D.x < SCREEN_WIDTH - 1 && windowGrid[Particles->sand_D.x + 1][Particles->sand_D.y + 1] == ' '
+        } else if(Particles->sand_D.y < SCREEN_HEIGHT - 1 && Particles->sand_D.x < SCREEN_WIDTH - 1 && windowGrid[Particles->sand_D.x + 1][Particles->sand_D.y + 1] == ' '
             ){ //If falling down first fails proceeds to fall to the side [Only if the particle does not collide with the wall or another particle (left side priority)]
             //printf("Moved Right\n");
             //Updates grid and moves particle on screen to the new position for each particle
